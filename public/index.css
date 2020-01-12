@@ -1,11 +1,54 @@
-/* 
-请把与index.html页面相关的css代码写在这里
-同时删除该注释
-*/
+* {
+    padding: 0;
+    margin: 0;
+}
 
-/* #message只是一个示例，可以删除 */
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
 #message {
-	height: 30px;
-	line-height: 30px;
-	border: 1px solid red;
+    line-height: 30px;
+    border: 1px solid red;
+}
+
+.items-list {
+    width: 600px;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.items-list caption {
+    font-size: 26px;
+    font-weight: 1000;
+}
+
+.items-list thead {
+    font-size: 20px;
+    font-weight: 600;
+    background-color: #333;
+}
+
+.items-list tr {
+    height: 60px;
+    border-bottom: 1px solid #dcdee3;
+}
+
+.items-list tbody tr td button {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    outline: none;
+    transition: background-color 0.5s;
+}
+
+.items-list tbody tr td button:hover {
+    color: #fff;
+    background-color: #3080fe;
+}
+
+.items-list tbody tr td span {
+    padding: 5px;
 }

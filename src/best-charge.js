@@ -1,131 +1,105 @@
-function bestCharge(selectedItems) {
-  console.assert(selectedItems.length, "Don't have any items!");
-  let promotions = loadPromotions();
-  let items = loadAllItems();
-  let infoOfSelectedItems = getInfoOfSelectedItems(selectedItems, promotions, items);
+function bestCharge(items) {
+    let sumOfOriginalPrice = GetSumOfPrice(items, "original");
+    let sumOfEnjoyHaltPrice = GetSumOfPrice(items, "halt");
+    let sumOfFullReduce = -1;
+    if (sumOfOriginalPrice >= 30) {
+        sumOfFullReduce = sumOfOriginalPrice - 6;
+    }
 
-  let sumOfOriginalPrice = GetSumOfPrice(infoOfSelectedItems, false);
-  let sumOfFullReduce = -1;
-  if (sumOfOriginalPrice >= 30) {
-    sumOfFullReduce = sumOfOriginalPrice - 6;
-  }
-  let sumOfEnjoyHaltPrice = GetSumOfPrice(infoOfSelectedItems, items,true);
-  return bestResultOfCompare(sumOfOriginalPrice, sumOfEnjoyHaltPrice, sumOfFullReduce, infoOfSelectedItems);
+    return bestResultOfCompare(sumOfOriginalPrice, sumOfEnjoyHaltPrice, sumOfFullReduce, items);
 }
 
-function GetSumOfPrice(items, bool) {
-  let sum = 0;
-  if (!bool) {
-    for (let i = 0, lens = items.length; i < lens; i++) {
-      sum += parseInt(items[i].count) * items[i].price;
+function GetSumOfPrice(items, flag) {
+    let sum = 0;
+    if (flag === "halt") {
+        sum = items.reduce((sum, item) => {
+            if (item.halt === "true") {
+                sum += item.number * (item.price / 2);
+            }
+            if (item.halt === "false") {
+                sum += item.number * item.price;
+            }
+            return sum;
+        }, 0)
     }
-  } else {
-    for (let i = 0, lens = items.length; i < lens; i++) {
-      if (items[i].haltPrice) {
-        sum += parseInt(items[i].count) * items[i].haltPrice;
-      } else {
-        sum += parseInt(items[i].count) * items[i].price;
-      }
-    }
-  }
-  return sum;
-}
 
-
-function getInfoOfSelectedItems(selectedItems, promotions, items) {
-  let setOfSelectedItems = [];
-  for (let i = 0, lens = selectedItems.length; i < lens; i++) {
-    let item = selectedItems[i].split(' x ');
-    for (let j = 0, itemsLens = items.length; j < itemsLens; j++) {
-      if (items[j].id === item[0]) {
-        let infoOfItem = items[j];
-        if (isHaltPrice(item[0], promotions)) {
-          infoOfItem.haltPrice = infoOfItem.price * 0.5;
-        }
-        infoOfItem.count = item[1];
-        setOfSelectedItems.push(infoOfItem);
-      }
+    if (flag === "original") {
+        sum = items.reduce((sum, item) => {
+            sum += item.number * item.price;
+            return sum;
+        }, 0)
     }
-  }
-  return setOfSelectedItems;
-}
-
-function isHaltPrice(id, promotions) {
-  for (let i = 0, lens = promotions.length; i < lens; i++) {
-    if (promotions[i].type === '指定菜品半价') {
-      for (let j = 0, proItemsLens = promotions[i].items.length; j < proItemsLens; j++) {
-        if (promotions[i].items[j] === id) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
+    return sum;
 }
 
 function bestResultOfCompare(original, halt, fullThirty, items) {
-  let result = '';
-  let infoOfPrint = arrToStr(items);
-  if (original === halt) {
+    let result = '';
     if (fullThirty > 0) {
-      result = `
-      ============= 订餐明细 =============\n`
-      + infoOfPrint.orderDetail
-      + '-----------------------------------\n'
-      + '使用优惠:\n'
-      + '满30减6元，省6元\n'
-      + '-----------------------------------\n'
-      + '总计：' + fullThirty + '元\n'
-      + `===================================`
-    } else {
-      result = `
-      ============= 订餐明细 =============\n`
-      + infoOfPrint.orderDetail
-      + '-----------------------------------\n'
-      + '总计：' + original + '元\n'
-      + `===================================`
+        if (fullThirty <= halt) {
+            result = getPrintInfo(fullThirty, items, "fullReduce");
+        }
+
+        if (fullThirty > halt) {
+            result = getPrintInfo(halt, items, "halt", original);
+        }
     }
-  } else {
-    if (fullThirty > 0 && fullThirty < halt) {
-      result = 
-      `============= 订餐明细 =============\n`
-      + infoOfPrint.orderDetail
-      + `-----------------------------------\n`
-      + '使用优惠:\n'
-      + '满30减6元，省6元\n'
-      + '-----------------------------------\n'
-      + '总计：' + fullThirty + '元\n'
-      + `===================================`
-    } else {
-      result = 
-      `============= 订餐明细 =============\n`
-      + infoOfPrint.orderDetail
-      + '-----------------------------------\n'
-      + '使用优惠:\n'
-      + '指定菜品半价(' + infoOfPrint.itemOfHalt + ')，省' + (original - halt) + '元\n'
-      + '-----------------------------------\n'
-      + '总计：' + halt + '元\n'
-      + `===================================`
+
+    if (fullThirty < 0) {
+        if (halt === original) {
+            result = getPrintInfo(original, items, "original");
+        } else {
+            result = getPrintInfo(halt, items, "halt", original);
+        }
     }
-  }
-  return result;
+    return result;
 }
 
-function arrToStr(items) {
-  let obj = {
-
-  };
-  let str = '';
-  let haltItem = '';
-  for (let i = 0, lens = items.length; i < lens; i++) {
-    if (items[i].haltPrice) {
-      haltItem += items[i].name + '，';
+function getPrintInfo(total, items, flag, original) {
+    let result = '';
+    let SelectItem = getSelectItems(items);
+    if (flag === "original") {
+        result = `============= 订餐明细 =============\n` +
+            SelectItem[0] +
+            '\n-----------------------------------\n' +
+            '总计：' + total + '元\n' +
+            `===================================`
     }
-    str += items[i].name + ' x ' + items[i].count + ' = ' + (parseInt(items[i].count) * items[i].price) + '元\n';
-  }
-  obj.orderDetail = str;
-  if (haltItem !== '') {
-    obj.itemOfHalt = haltItem.substr(0, haltItem.length-1);
-  }
-  return obj;
+
+    if (flag === "halt") {
+        result = `============= 订餐明细 =============\n` +
+            SelectItem[0] +
+            '\n-----------------------------------\n' +
+            '使用优惠:\n' +
+            '指定菜品半价(' + SelectItem[1].join() + ')，省' + (original - total) + '元\n' +
+            '-----------------------------------\n' +
+            '总计：' + total + '元\n' +
+            `===================================`
+    }
+
+    if (flag === "fullReduce") {
+        result = `============= 订餐明细 =============\n` +
+            SelectItem[0] +
+            '\n-----------------------------------\n' +
+            '使用优惠:\n' +
+            '满30减6元，省6元\n' +
+            '-----------------------------------\n' +
+            '总计：' + total + '元\n' +
+            `===================================`
+    }
+    return result;
 }
+
+function getSelectItems(items) {
+    let arr = items.reduce((arr, item) => {
+        if (item.number > 0) {
+            if (item.halt === "true") {
+                arr[1].push(item.name);
+            }
+            arr[0] += item.name + ' x ' + item.number + ' = ' + item.number * item.price + "元\n";
+        }
+        return arr;
+    }, ['', []])
+    arr[0] = arr[0].substring(0, arr[0].length - 1);
+    return arr;
+}
+2
